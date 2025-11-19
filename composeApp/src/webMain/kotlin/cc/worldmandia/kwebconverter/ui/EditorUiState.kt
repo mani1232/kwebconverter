@@ -54,13 +54,13 @@ fun flattenTree(
 
     result.add(
         UiNode(
-        id = if (parent is EditableMapEntry) parent.id else node.id,
-        node = node,
-        keyInfo = keyInfo,
-        level = level,
-        mapId = parentMapId,
-        onDelete = { cmd.execute(RemoveNodeCommand(node)) }
-    ))
+            id = if (parent is EditableMapEntry) parent.id else node.id,
+            node = node,
+            keyInfo = keyInfo,
+            level = level,
+            mapId = parentMapId,
+            onDelete = { cmd.execute(RemoveNodeCommand(node)) }
+        ))
 
     // 2. Add Children (Recursion)
     if (node is EditableList && node.isExpanded) {

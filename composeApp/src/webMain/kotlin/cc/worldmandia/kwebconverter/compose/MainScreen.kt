@@ -16,12 +16,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import cc.worldmandia.kwebconverter.FileEditorRoute
 import cc.worldmandia.kwebconverter.viewmodel.FilesViewModel
-import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.FileKitPickerState
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
-import io.github.vinceglb.filekit.download
 import io.github.vinceglb.filekit.name
 import kotlinx.coroutines.launch
 
@@ -46,7 +44,8 @@ fun MainScreen(filesViewModel: FilesViewModel, changePage: (NavKey) -> Unit) {
             }
 
             is FileKitPickerState.Completed -> {
-                filesViewModel.loadFilesContent() // TODO RENDER
+                filesViewModel.loadFilesContent()
+                filesViewModel.restoreDraftsIfAny()
                 println("Completed: ${state.result.size} files selected")
             }
 
@@ -73,11 +72,7 @@ fun MainScreen(filesViewModel: FilesViewModel, changePage: (NavKey) -> Unit) {
                                 Text("Selected file: ${fileData.originalFile.name}")
                                 Button(onClick = {
                                     scope.launch {
-                                        FileKit.download(
-                                            fileData.cachedEditedContent?.encodeToByteArray()
-                                                ?: "Edited Content is null".encodeToByteArray(),
-                                            fileData.originalFile.name
-                                        )
+                                        fileData.saveToUser()
                                     }
                                 }) {
                                     Text("Download")

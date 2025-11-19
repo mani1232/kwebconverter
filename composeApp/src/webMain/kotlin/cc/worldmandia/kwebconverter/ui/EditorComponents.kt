@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.byValue
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -23,13 +24,11 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import cc.worldmandia.kwebconverter.NodeSerializer
-import cc.worldmandia.kwebconverter.ParserType
+import cc.worldmandia.kwebconverter.*
 import cc.worldmandia.kwebconverter.logic.CommandManager
 import cc.worldmandia.kwebconverter.logic.MoveItemCommand
 import cc.worldmandia.kwebconverter.logic.ReplaceNodeCommand
 import cc.worldmandia.kwebconverter.model.*
-import cc.worldmandia.kwebconverter.setPlainText
 import kotlinx.coroutines.launch
 
 @Composable
@@ -48,7 +47,7 @@ fun NodeRow(
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(Modifier.width((item.level * 16).dp))
+        IndentationLines(item.level)
 
         ExpandControl(item.node)
 
@@ -68,6 +67,53 @@ fun NodeRow(
         }
 
         NodeActionsMenu(item, cmdManager)
+    }
+}
+
+@Composable
+fun Breadcrumbs(
+    node: EditableNode?,
+    onNodeClick: (EditableNode) -> Unit
+) {
+    val path = remember(node) {
+        val list = mutableListOf<Pair<String, EditableNode>>()
+        var current = node
+        while (current != null) {
+            val parent = current.parent
+            val name = when (parent) {
+                is EditableMapEntry -> parent.keyState.text.toString().ifEmpty { "key" }
+                is EditableList -> {
+                    val index = parent.items.indexOf(current)
+                    "[$index]"
+                }
+
+                else -> "root"
+            }
+            list.add(0, name to current)
+
+            current = if (parent is EditableMapEntry) parent.parentMap else parent as? EditableNode
+        }
+        if (list.isEmpty()) listOf("root" to (node ?: return@remember emptyList())) else list
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        path.forEachIndexed { index, (name, pathNode) ->
+            if (index > 0) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = Color.Gray
+                )
+            }
+            TextButton(
+                onClick = { onNodeClick(pathNode) },
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                modifier = Modifier.height(32.dp)
+            ) {
+                Text(name, style = MaterialTheme.typography.bodySmall)
+            }
+        }
     }
 }
 
@@ -155,21 +201,21 @@ fun AddActionRow(item: UiAddAction, rootType: ParserType) {
 
 @Composable
 fun ScalarEditor(node: EditableScalar, onFocus: (EditableNode) -> Unit) {
-    val color = when (node.explicitType) {
-        ScalarType.String -> MaterialTheme.colorScheme.tertiary
-        ScalarType.Number -> MaterialTheme.colorScheme.primary
-        ScalarType.Boolean -> MaterialTheme.colorScheme.secondary
+    val typeColor = when (node.explicitType) {
+        ScalarType.String -> ColorString
+        ScalarType.Number -> ColorNumber
+        ScalarType.Boolean -> ColorBoolean
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f)) {
             when (node.explicitType) {
-                ScalarType.String -> SimpleTextField(node, color, onFocus)
-                ScalarType.Number -> NumberTextField(node, color, onFocus)
+                ScalarType.String -> SimpleTextField(node, typeColor, onFocus)
+                ScalarType.Number -> NumberTextField(node, typeColor, onFocus)
                 ScalarType.Boolean -> BooleanSelector(node)
             }
         }
-        TypeSelector(node, color)
+        TypeSelector(node, typeColor)
     }
 }
 
@@ -230,25 +276,29 @@ fun BooleanSelector(node: EditableScalar) {
 @Composable
 fun TypeSelector(node: EditableScalar, color: Color) {
     var expanded by remember { mutableStateOf(false) }
-    Box {
-        TextButton(onClick = { expanded = true }) {
-            Text(
-                text = when (node.explicitType) {
-                    ScalarType.String -> "TXT"
-                    ScalarType.Number -> "NUM"
-                    ScalarType.Boolean -> "BOOL"
-                },
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-        }
+    Box(
+        modifier = Modifier
+            .padding(start = 4.dp)
+            .size(24.dp)
+            .background(color, shape = MaterialTheme.shapes.extraSmall)
+            .clickable { expanded = true },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = when (node.explicitType) {
+                ScalarType.String -> "S"
+                ScalarType.Number -> "N"
+                ScalarType.Boolean -> "B"
+            },
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onPrimary // Белый текст на цветном фоне
+        )
+
         DropdownMenu(expanded, { expanded = false }) {
             ScalarType.entries.filter { it != node.explicitType }.forEach { type ->
                 DropdownMenuItem(
                     text = { Text(type.name) },
                     onClick = {
-                        // Логика конвертации при смене типа
                         val text = node.state.text.toString()
                         if (type == ScalarType.Boolean && text != "true") {
                             node.state.edit { replace(0, length, "false") }
@@ -277,6 +327,27 @@ fun ContainerBadge(label: String, size: Int) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
         Spacer(Modifier.width(4.dp))
         Badge(containerColor = MaterialTheme.colorScheme.surfaceVariant) { Text("$size") }
+    }
+}
+
+@Composable
+fun IndentationLines(level: Int) {
+    Row(Modifier.width((level * 16).dp)) {
+        repeat(level) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .width(1.dp)
+                        .fillMaxHeight()
+                        .background(Color.Gray.copy(alpha = 0.3f))
+                )
+            }
+        }
     }
 }
 

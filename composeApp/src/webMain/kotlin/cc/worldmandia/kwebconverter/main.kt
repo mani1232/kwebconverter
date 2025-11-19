@@ -71,7 +71,7 @@ fun main() = ComposeViewport {
                     }
 
                     navigation<FileEditorRoute> { route ->
-                        FileEditorScreen(file = route.file) {
+                        FileEditorScreen(file = route.file, koinViewModel()) {
                             backStack.removeLastOrNull()
                         }
                     }

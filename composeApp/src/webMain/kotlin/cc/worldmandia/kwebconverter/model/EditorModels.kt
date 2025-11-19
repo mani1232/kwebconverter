@@ -1,10 +1,7 @@
 package cc.worldmandia.kwebconverter.model
 
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -13,8 +10,6 @@ fun generateId(): String = Uuid.generateV7().toHexDashString()
 
 enum class ScalarType { String, Number, Boolean }
 enum class NodeType { String, Number, Boolean, List, Map, Null }
-
-// --- Nodes ---
 
 sealed interface ParentContainer {
     fun replaceChild(oldNode: EditableNode, newNode: EditableNode)
@@ -103,6 +98,13 @@ class EditableMap(
     val entries = mutableStateListOf<EditableMapEntry>().apply { addAll(initialEntries) }
     var isExpanded by mutableStateOf(true)
     override var requestFocus by mutableStateOf(false)
+
+    val duplicateKeys by derivedStateOf {
+        entries.groupingBy { it.keyState.text.toString() }
+            .eachCount()
+            .filter { it.value > 1 }
+            .keys
+    }
 
     override fun replaceChild(oldNode: EditableNode, newNode: EditableNode) {}
 

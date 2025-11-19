@@ -8,6 +8,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.UnfoldLess
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
@@ -18,6 +21,8 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import cc.worldmandia.kwebconverter.ParserType
 import cc.worldmandia.kwebconverter.logic.CommandManager
+import cc.worldmandia.kwebconverter.logic.setAllExpanded
+import cc.worldmandia.kwebconverter.model.EditableNode
 import cc.worldmandia.kwebconverter.setPlainText
 import kotlinx.coroutines.launch
 
@@ -29,13 +34,41 @@ fun EditorTopBar(
     searchQuery: String,
     onSearchChange: (String) -> Unit,
     cmdManager: CommandManager,
+    rootNode: EditableNode,
     onBack: () -> Unit,
     onSave: () -> Unit,
+    onReset: () -> Unit,
     onGenerateContent: () -> String?
 ) {
     var isSearchActive by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
+
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            icon = { Icon(Icons.Default.Refresh, null) },
+            title = { Text("Reset File?") },
+            text = { Text("This will discard all unsaved changes and revert to the original file. This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onReset()
+                        showResetDialog = false
+                    }
+                ) {
+                    Text("Reset", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     TopAppBar(
         title = {
@@ -69,11 +102,20 @@ fun EditorTopBar(
         },
         actions = {
             if (!isSearchActive) {
+                IconButton(onClick = { setAllExpanded(rootNode, false) }) {
+                    Icon(Icons.Default.UnfoldLess, "Collapse All")
+                }
+                IconButton(onClick = { setAllExpanded(rootNode, true) }) {
+                    Icon(Icons.Default.UnfoldMore, "Expand All")
+                }
                 IconButton(onClick = { cmdManager.undo() }, enabled = cmdManager.canUndo) {
                     Icon(Icons.AutoMirrored.Filled.Undo, "Undo")
                 }
                 IconButton(onClick = { cmdManager.redo() }, enabled = cmdManager.canRedo) {
                     Icon(Icons.AutoMirrored.Filled.Redo, "Redo")
+                }
+                IconButton(onClick = { showResetDialog = true }) {
+                    Icon(Icons.Default.Refresh, "Reset")
                 }
             }
 

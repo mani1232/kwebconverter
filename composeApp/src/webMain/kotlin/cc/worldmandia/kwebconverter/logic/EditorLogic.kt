@@ -36,6 +36,12 @@ class CommandManager(private val maxHistory: Int = 25) {
         }
     }
 
+    fun clear() {
+        _undoStack.clear()
+        _redoStack.clear()
+        updateState()
+    }
+
     fun redo() {
         if (_redoStack.isNotEmpty()) {
             val command = _redoStack.removeLast()
@@ -209,5 +215,21 @@ object UniqueKeyGenerator {
             key = "${base}_$counter"
         }
         return key
+    }
+}
+
+fun setAllExpanded(node: EditableNode, expanded: Boolean) {
+    when (node) {
+        is EditableList -> {
+            node.isExpanded = expanded
+            node.items.forEach { setAllExpanded(it, expanded) }
+        }
+
+        is EditableMap -> {
+            node.isExpanded = expanded
+            node.entries.forEach { setAllExpanded(it.value, expanded) }
+        }
+
+        else -> {}
     }
 }

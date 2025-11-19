@@ -7,19 +7,24 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import li.songe.json5.Json5
 
+sealed class ParseResult {
+    data class Success(val root: EditableRoot) : ParseResult()
+    data class Error(val message: String, val throwable: Throwable? = null) : ParseResult()
+}
+
 object FileParser {
-    fun parseFile(file: FileItemModel): EditableRoot? {
-        val content = file.cachedOriginalContent ?: return null
+    fun parseFile(file: FileItemModel): ParseResult {
+        val content = file.cachedEditedContent ?: file.cachedOriginalContent
+        ?: return ParseResult.Error("File not found or cant read")
         return try {
             val rootNode = when (file.parserType) {
                 ParserType.YAML -> YAMLConfigured.parseToYamlNode(content).toEditableNode(null)
                 ParserType.JSON5 -> Json5.parseToJson5Element(content).toEditableNode(null)
-                else -> null
+                else -> return ParseResult.Error("Cant parse file")
             }
-            rootNode?.let { EditableRoot(it) }
+            ParseResult.Success(EditableRoot(rootNode))
         } catch (e: Exception) {
-            e.printStackTrace()
-            null
+            ParseResult.Error("Failed to parse ${file.parserType}: ${e.message}", e)
         }
     }
 }
