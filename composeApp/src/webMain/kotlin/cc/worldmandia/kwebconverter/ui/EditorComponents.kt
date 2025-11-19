@@ -1,35 +1,63 @@
 package cc.worldmandia.kwebconverter.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.byValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import cc.worldmandia.kwebconverter.*
+import androidx.compose.ui.unit.sp
+import cc.worldmandia.kwebconverter.NodeSerializer
+import cc.worldmandia.kwebconverter.ParserType
 import cc.worldmandia.kwebconverter.logic.CommandManager
 import cc.worldmandia.kwebconverter.logic.MoveItemCommand
 import cc.worldmandia.kwebconverter.logic.ReplaceNodeCommand
 import cc.worldmandia.kwebconverter.model.*
+import cc.worldmandia.kwebconverter.setPlainText
 import kotlinx.coroutines.launch
+
+// --- Colors for IDE look ---
+val KeyColor = Color(0xFFCFD8DC) // Light Grey for Keys
+val StringColor = Color(0xFFA5D6A7) // Soft Green
+val NumberColor = Color(0xFF90CAF9) // Soft Blue
+val BooleanColor = Color(0xFFFFCC80) // Soft Orange
+val NullColor = Color(0xFFEF9A9A)   // Soft Red
+val CommentColor = Color.Gray
+
+val CodeFont = FontFamily.Monospace
 
 @Composable
 fun NodeRow(
@@ -38,35 +66,56 @@ fun NodeRow(
     cmdManager: CommandManager,
     onFocus: (EditableNode) -> Unit
 ) {
-    val background = if (isDuplicate) MaterialTheme.colorScheme.errorContainer.copy(0.3f) else Color.Transparent
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+    val backgroundColor = when {
+        isDuplicate -> MaterialTheme.colorScheme.errorContainer.copy(0.3f)
+        isHovered -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
+        else -> Color.Transparent
+    }
 
     Row(
         Modifier
             .fillMaxWidth()
-            .background(background)
-            .padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .background(backgroundColor)
+            .hoverable(interactionSource)
+            .padding(vertical = 1.dp, horizontal = 4.dp), // Compact padding
+        verticalAlignment = Alignment.Top // Align top for multiline strings
     ) {
-        IndentationLines(item.level)
+        // Indentation
+        IndentationGuides(item.level)
 
+        // Expand icon / Spacer
         ExpandControl(item.node)
 
+        // Key (Map Key or List Index)
         KeyField(
             keyInfo = item.keyInfo,
             isError = isDuplicate,
             onFocus = { onFocus(item.node) }
         )
 
-        Box(Modifier.weight(1f)) {
+        // Separator for Map
+        if (item.keyInfo is MapKey) {
+            Text(":", color = CommentColor, fontFamily = CodeFont, modifier = Modifier.padding(end = 8.dp))
+        }
+
+        // Value Area
+        Box(Modifier.weight(1f).align(Alignment.CenterVertically)) {
             when (val n = item.node) {
                 is EditableScalar -> ScalarEditor(n, onFocus)
-                is EditableList -> ContainerBadge("List", n.items.size)
-                is EditableMap -> ContainerBadge("Map", n.entries.size)
-                is EditableNull -> Text("null", color = MaterialTheme.colorScheme.error)
+                is EditableList -> ContainerBadge("List", n.items.size, "[", "]")
+                is EditableMap -> ContainerBadge("Map", n.entries.size, "{", "}")
+                is EditableNull -> Text("null", color = NullColor, fontFamily = CodeFont, fontSize = 14.sp)
             }
         }
 
-        NodeActionsMenu(item, cmdManager)
+        // Actions (Show only on hover or if menu is open)
+        // Note: For touch devices, you might want to always show this or use long press
+        Box(Modifier.align(Alignment.CenterVertically)) {
+            NodeActionsMenu(item, cmdManager, visible = isHovered)
+        }
     }
 }
 
@@ -75,6 +124,7 @@ fun Breadcrumbs(
     node: EditableNode?,
     onNodeClick: (EditableNode) -> Unit
 ) {
+    // Улучшенные хлебные крошки
     val path = remember(node) {
         val list = mutableListOf<Pair<String, EditableNode>>()
         var current = node
@@ -90,29 +140,37 @@ fun Breadcrumbs(
                 else -> "root"
             }
             list.add(0, name to current)
-
             current = if (parent is EditableMapEntry) parent.parentMap else parent as? EditableNode
         }
-        if (list.isEmpty()) listOf("root" to (node ?: return@remember emptyList())) else list
+        if (list.isEmpty()) emptyList() else list
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    if (path.isEmpty()) return
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
         path.forEachIndexed { index, (name, pathNode) ->
             if (index > 0) {
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(14.dp),
                     tint = Color.Gray
                 )
             }
-            TextButton(
-                onClick = { onNodeClick(pathNode) },
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-                modifier = Modifier.height(32.dp)
-            ) {
-                Text(name, style = MaterialTheme.typography.bodySmall)
-            }
+
+            val isLast = index == path.lastIndex
+            Text(
+                text = name,
+                color = if (isLast) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = TextStyle(fontFamily = CodeFont, fontSize = 12.sp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable { onNodeClick(pathNode) }
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
+            )
         }
     }
 }
@@ -124,14 +182,21 @@ private fun ExpandControl(node: EditableNode) {
         val expanded = (node as? EditableList)?.isExpanded ?: (node as? EditableMap)?.isExpanded ?: false
         val rotation by animateFloatAsState(if (expanded) 0f else -90f)
 
-        IconButton(onClick = {
-            if (node is EditableList) node.isExpanded = !node.isExpanded
-            if (node is EditableMap) node.isExpanded = !node.isExpanded
-        }, modifier = Modifier.size(24.dp)) {
-            Icon(Icons.Rounded.KeyboardArrowDown, null, modifier = Modifier.rotate(rotation))
-        }
+        Icon(
+            Icons.Rounded.KeyboardArrowDown,
+            null,
+            modifier = Modifier
+                .size(20.dp) // Smaller icon
+                .rotate(rotation)
+                .pointerHoverIcon(PointerIcon.Hand)
+                .clickable {
+                    if (node is EditableList) node.isExpanded = !node.isExpanded
+                    if (node is EditableMap) node.isExpanded = !node.isExpanded
+                },
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     } else {
-        Spacer(Modifier.size(24.dp))
+        Spacer(Modifier.size(20.dp))
     }
 }
 
@@ -143,26 +208,34 @@ private fun KeyField(
 ) {
     when (keyInfo) {
         is MapKey -> {
-            OutlinedTextField(
+            // Minimalist TextField
+            BasicTextField(
                 state = keyInfo.state,
                 modifier = Modifier
-                    .width(140.dp)
-                    .padding(horizontal = 4.dp)
+                    .width(IntrinsicSize.Min)
+                    .defaultMinSize(minWidth = 40.dp)
                     .onFocusChanged { if (it.isFocused) onFocus() },
-                isError = isError,
-                lineLimits = TextFieldLineLimits.SingleLine,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.Transparent
-                )
+                textStyle = TextStyle(
+                    color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    fontFamily = CodeFont,
+                    fontSize = 14.sp
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                decorator = { innerTextField ->
+                    Box(
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        innerTextField()
+                    }
+                }
             )
         }
 
         is ListIndex -> {
             Text(
-                text = "${keyInfo.index}.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                text = "${keyInfo.index}",
+                style = TextStyle(fontFamily = CodeFont, fontSize = 14.sp),
+                color = CommentColor,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
@@ -173,25 +246,58 @@ private fun KeyField(
 
 @Composable
 fun AddActionRow(item: UiAddAction, rootType: ParserType) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
     var expanded by remember { mutableStateOf(false) }
+
     Row(
-        Modifier.fillMaxWidth().padding(start = (item.level * 16).dp)
+        Modifier
+            .fillMaxWidth()
+            .hoverable(interactionSource)
             .clickable { expanded = true }
-            .padding(8.dp)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.Add, null, Modifier.size(16.dp))
-        Text("Add Item...", Modifier.padding(start = 8.dp))
+        IndentationGuides(item.level)
+        Spacer(Modifier.width(24.dp)) // Offset for expand icon
+
+        // Dotted line or subtle look
+        Box(
+            Modifier
+                .weight(1f)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
+                .padding(4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Rounded.AddCircleOutline,
+                    null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Add Item",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                )
+            }
+        }
 
         DropdownMenu(expanded, { expanded = false }) {
             NodeType.entries.forEach { type ->
-                val isAllowed = if (rootType == ParserType.UNSUPPORTED) { // TODO for PROPERTIES
+                // Filter logic...
+                val isAllowed = if (rootType == ParserType.UNSUPPORTED) {
                     type == NodeType.String || type == NodeType.Number || type == NodeType.Boolean
                 } else true
 
                 if (isAllowed) {
                     DropdownMenuItem(
                         text = { Text(type.name) },
-                        onClick = { item.onAdd(type); expanded = false }
+                        onClick = { item.onAdd(type); expanded = false },
+                        leadingIcon = { TypeIcon(type) }
                     )
                 }
             }
@@ -200,38 +306,80 @@ fun AddActionRow(item: UiAddAction, rootType: ParserType) {
 }
 
 @Composable
+fun TypeIcon(type: NodeType) {
+    val (label, color) = when (type) {
+        NodeType.String -> "S" to StringColor
+        NodeType.Number -> "N" to NumberColor
+        NodeType.Boolean -> "B" to BooleanColor
+        NodeType.List -> "[]" to Color.Gray
+        NodeType.Map -> "{}" to Color.Gray
+        NodeType.Null -> "Ø" to NullColor
+    }
+
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .background(color.copy(alpha = 0.2f), RoundedCornerShape(4.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color)
+    }
+}
+
+
+@Composable
 fun ScalarEditor(node: EditableScalar, onFocus: (EditableNode) -> Unit) {
     val typeColor = when (node.explicitType) {
-        ScalarType.String -> ColorString
-        ScalarType.Number -> ColorNumber
-        ScalarType.Boolean -> ColorBoolean
+        ScalarType.String -> StringColor
+        ScalarType.Number -> NumberColor
+        ScalarType.Boolean -> BooleanColor
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f)) {
             when (node.explicitType) {
-                ScalarType.String -> SimpleTextField(node, typeColor, onFocus)
+                ScalarType.String -> CodeTextField(node, typeColor, onFocus)
                 ScalarType.Number -> NumberTextField(node, typeColor, onFocus)
                 ScalarType.Boolean -> BooleanSelector(node)
             }
         }
+        Spacer(Modifier.width(8.dp))
         TypeSelector(node, typeColor)
     }
 }
 
 @Composable
-fun SimpleTextField(node: EditableScalar, color: Color, onFocus: (EditableNode) -> Unit) {
-    OutlinedTextField(
+fun CodeTextField(node: EditableScalar, color: Color, onFocus: (EditableNode) -> Unit) {
+    BasicTextField(
         state = node.state,
         modifier = Modifier
             .fillMaxWidth()
-            .onFocusChanged { if (it.isFocused) onFocus(node) }, // <-- Убедитесь, что это здесь
-        textStyle = MaterialTheme.typography.bodyMedium,
-        lineLimits = if (node.isMultiLine) TextFieldLineLimits.MultiLine(3, 10) else TextFieldLineLimits.SingleLine,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = color,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(0.5f)
-        )
+            .onFocusChanged { if (it.isFocused) onFocus(node) },
+        textStyle = TextStyle(
+            color = color,
+            fontFamily = CodeFont,
+            fontSize = 14.sp,
+            lineHeight = 20.sp
+        ),
+        lineLimits = if (node.isMultiLine) TextFieldLineLimits.MultiLine(1, 10) else TextFieldLineLimits.SingleLine,
+        cursorBrush = SolidColor(color),
+        decorator = { innerTextField ->
+            Box(
+                modifier = Modifier
+                    .background(color.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+            ) {
+                if (node.state.text.isEmpty()) {
+                    Text(
+                        "empty",
+                        color = Color.Gray.copy(0.5f),
+                        fontSize = 14.sp,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    )
+                }
+                innerTextField()
+            }
+        }
     )
 }
 
@@ -242,33 +390,46 @@ fun NumberTextField(node: EditableScalar, color: Color, onFocus: (EditableNode) 
             if (new.toString().matches(Regex("^-?\\d*\\.?\\d*$")) || new.isEmpty()) new else old
         }
     }
-    OutlinedTextField(
+    BasicTextField(
         state = node.state,
         modifier = Modifier
             .fillMaxWidth()
             .onFocusChanged { if (it.isFocused) onFocus(node) },
         inputTransformation = numberFilter,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        lineLimits = TextFieldLineLimits.SingleLine,
-        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = color)
+        textStyle = TextStyle(color = color, fontFamily = CodeFont, fontSize = 14.sp),
+        cursorBrush = SolidColor(color),
+        decorator = { innerTextField ->
+            Box(
+                modifier = Modifier
+                    .background(color.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+            ) {
+                innerTextField()
+            }
+        }
     )
 }
 
 @Composable
 fun BooleanSelector(node: EditableScalar) {
     val isTrue = node.state.text.toString().toBooleanStrictOrNull() ?: false
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        FilterChip(
-            selected = isTrue,
-            onClick = { node.state.edit { replace(0, length, "true") } },
-            label = { Text("True") }
-        )
-        Spacer(Modifier.width(8.dp))
-        FilterChip(
-            selected = !isTrue,
-            onClick = { node.state.edit { replace(0, length, "false") } },
-            label = { Text("False") },
-            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.errorContainer)
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(BooleanColor.copy(alpha = 0.1f))
+            .clickable {
+                val newValue = (!isTrue).toString()
+                node.state.edit { replace(0, length, newValue) }
+            }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = if (isTrue) "true" else "false",
+            color = BooleanColor,
+            fontFamily = CodeFont,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -276,29 +437,33 @@ fun BooleanSelector(node: EditableScalar) {
 @Composable
 fun TypeSelector(node: EditableScalar, color: Color) {
     var expanded by remember { mutableStateOf(false) }
-    Box(
-        modifier = Modifier
-            .padding(start = 4.dp)
-            .size(24.dp)
-            .background(color, shape = MaterialTheme.shapes.extraSmall)
-            .clickable { expanded = true },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = when (node.explicitType) {
-                ScalarType.String -> "S"
-                ScalarType.Number -> "N"
-                ScalarType.Boolean -> "B"
-            },
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onPrimary // Белый текст на цветном фоне
-        )
+
+    Box {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(color.copy(alpha = 0.2f))
+                .clickable { expanded = true },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = when (node.explicitType) {
+                    ScalarType.String -> "S"
+                    ScalarType.Number -> "N"
+                    ScalarType.Boolean -> "B"
+                },
+                style = TextStyle(fontFamily = CodeFont, fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                color = color
+            )
+        }
 
         DropdownMenu(expanded, { expanded = false }) {
             ScalarType.entries.filter { it != node.explicitType }.forEach { type ->
                 DropdownMenuItem(
                     text = { Text(type.name) },
                     onClick = {
+                        // Logic remains the same
                         val text = node.state.text.toString()
                         if (type == ScalarType.Boolean && text != "true") {
                             node.state.edit { replace(0, length, "false") }
@@ -313,7 +478,7 @@ fun TypeSelector(node: EditableScalar, color: Color) {
             if (node.explicitType == ScalarType.String) {
                 HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text(if (node.isMultiLine) "Single Line" else "Multi Line") },
+                    text = { Text(if (node.isMultiLine) "Switch to Single Line" else "Switch to Multi Line") },
                     onClick = { node.isMultiLine = !node.isMultiLine; expanded = false }
                 )
             }
@@ -322,30 +487,39 @@ fun TypeSelector(node: EditableScalar, color: Color) {
 }
 
 @Composable
-fun ContainerBadge(label: String, size: Int) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
-        Spacer(Modifier.width(4.dp))
-        Badge(containerColor = MaterialTheme.colorScheme.surfaceVariant) { Text("$size") }
+fun ContainerBadge(type: String, size: Int, openChar: String, closeChar: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("$type $openChar", style = TextStyle(fontFamily = CodeFont, color = Color.Gray))
+
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 4.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+                .padding(horizontal = 4.dp)
+        ) {
+            Text("$size", style = MaterialTheme.typography.labelSmall)
+        }
+
+        Text(closeChar, style = TextStyle(fontFamily = CodeFont, color = Color.Gray))
     }
 }
 
 @Composable
-fun IndentationLines(level: Int) {
-    Row(Modifier.width((level * 16).dp)) {
-        repeat(level) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            ) {
+fun IndentationGuides(level: Int) {
+    // Используем более чистую линию, а не много Box-ов
+    if (level > 0) {
+        Row(Modifier.width((level * 20).dp)) { // Reduced width multiplier
+            repeat(level) {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .width(1.dp)
+                        .weight(1f)
                         .fillMaxHeight()
-                        .background(Color.Gray.copy(alpha = 0.3f))
-                )
+                ) {
+                    VerticalDivider(
+                        modifier = Modifier.align(Alignment.CenterEnd),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                    )
+                }
             }
         }
     }
@@ -354,20 +528,31 @@ fun IndentationLines(level: Int) {
 @Composable
 fun NodeActionsMenu(
     item: UiNode,
-    cmdManager: CommandManager
+    cmdManager: CommandManager,
+    visible: Boolean
 ) {
     var expanded by remember { mutableStateOf(false) }
     val parent = item.node.parent
-
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
 
     Box {
-        IconButton(onClick = { expanded = true }) {
-            Icon(Icons.Default.MoreVert, "Actions", tint = Color.Gray)
+        // Показываем иконку только при наведении или если меню открыто
+        AnimatedVisibility(visible || expanded) {
+            IconButton(
+                onClick = { expanded = true },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(Icons.Default.MoreVert, "Actions", tint = Color.Gray, modifier = Modifier.size(16.dp))
+            }
+        }
+
+        if (!visible && !expanded) {
+            Spacer(Modifier.size(24.dp))
         }
 
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            // ... (Logic logic remains exactly the same as in your original code) ...
             if (parent is EditableList) {
                 val index = parent.items.indexOf(item.node)
                 DropdownMenuItem(
@@ -375,17 +560,16 @@ fun NodeActionsMenu(
                     enabled = index > 0,
                     leadingIcon = { Icon(Icons.Default.ArrowUpward, null) },
                     onClick = {
-                        // Вот здесь мы используем cmdManager!
                         cmdManager.execute(MoveItemCommand(parent, item.node, true))
                         expanded = false
                     }
                 )
+                // ... Move Down logic ...
                 DropdownMenuItem(
                     text = { Text("Move Down") },
                     enabled = index < parent.items.lastIndex,
                     leadingIcon = { Icon(Icons.Default.ArrowDownward, null) },
                     onClick = {
-                        // И здесь тоже
                         cmdManager.execute(MoveItemCommand(parent, item.node, false))
                         expanded = false
                     }
@@ -397,7 +581,6 @@ fun NodeActionsMenu(
                 DropdownMenuItem(
                     text = { Text("Wrap in List") },
                     onClick = {
-                        // И здесь
                         cmdManager.execute(ReplaceNodeCommand(item.node) {
                             val list = EditableList(emptyList(), parent)
                             list.items.add(item.node.clone(list))
@@ -411,14 +594,11 @@ fun NodeActionsMenu(
             HorizontalDivider()
 
             DropdownMenuItem(
-                text = { Text("Copy Subtree") },
+                text = { Text("Copy JSON/YAML") },
                 leadingIcon = { Icon(Icons.Default.ContentCopy, null) },
                 onClick = {
                     val text = NodeSerializer.serializeForClipboard(item.node)
-
-                    scope.launch {
-                        clipboard.setPlainText(text)
-                    }
+                    scope.launch { clipboard.setPlainText(text) }
                     expanded = false
                 }
             )
