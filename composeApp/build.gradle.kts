@@ -48,6 +48,8 @@ kotlin {
             implementation(libs.serialization.json5)
             implementation(libs.serialization.yaml)
 
+            implementation(libs.compose.dnd)
+
             implementation(libs.filekit.core)
             implementation(libs.filekit.dialogs)
             implementation(libs.filekit.dialogs.compose)

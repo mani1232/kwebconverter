@@ -15,7 +15,6 @@ class CommandManager(private val maxHistory: Int = 25) {
     private val _undoStack = mutableListOf<Command>()
     private val _redoStack = mutableListOf<Command>()
 
-    // Use State to trigger UI updates on button availability
     var canUndo by mutableStateOf(false)
     var canRedo by mutableStateOf(false)
 
@@ -63,7 +62,7 @@ class AddItemCommand(
     private val parent: EditableNode,
     private val type: NodeType
 ) : Command {
-    private var addedNode: Any? = null // Can be Node or MapEntry
+    private var addedNode: Any? = null
 
     override fun execute() {
         when (parent) {
@@ -74,7 +73,6 @@ class AddItemCommand(
                 parent.isExpanded = true
                 addedNode = newNode
             }
-
             is EditableMap -> {
                 val newKey = UniqueKeyGenerator.generate(parent, "key")
                 val entry = EditableMapEntry(newKey, EditableNull(null), parent)
@@ -87,7 +85,6 @@ class AddItemCommand(
                 parent.isExpanded = true
                 addedNode = entry
             }
-
             else -> {}
         }
     }
@@ -113,16 +110,13 @@ class RemoveNodeCommand(private val node: EditableNode) : Command {
                 index = p.items.indexOf(node)
                 p.items.remove(node)
             }
-
             is EditableMapEntry -> {
-                // Removing a value from a map means removing the entry
                 val map = p.parentMap
                 container = map
                 mapEntry = p
                 index = map.entries.indexOf(p)
                 map.entries.remove(p)
             }
-
             else -> {}
         }
     }
@@ -160,7 +154,7 @@ class MoveItemCommand(
 ) : Command {
     private var moved = false
     override fun execute() = move(up)
-    override fun undo() = move(!up) // Reverse direction
+    override fun undo() = move(!up)
 
     private fun move(directionUp: Boolean) {
         val idx = list.items.indexOf(node)
@@ -171,6 +165,28 @@ class MoveItemCommand(
             list.items.removeAt(idx)
             list.items.add(targetIdx, node)
             moved = true
+        }
+    }
+}
+
+// New Command for Drag and Drop
+class ReorderItemCommand(
+    private val list: EditableList,
+    private val fromIndex: Int,
+    private val toIndex: Int
+) : Command {
+    override fun execute() {
+        if (fromIndex in list.items.indices && toIndex in list.items.indices) {
+            val item = list.items.removeAt(fromIndex)
+            list.items.add(toIndex, item)
+        }
+    }
+
+    override fun undo() {
+        // Обратное перемещение для отмены
+        if (toIndex in list.items.indices) {
+            val item = list.items.removeAt(toIndex)
+            list.items.add(fromIndex, item)
         }
     }
 }
@@ -224,12 +240,30 @@ fun setAllExpanded(node: EditableNode, expanded: Boolean) {
             node.isExpanded = expanded
             node.items.forEach { setAllExpanded(it, expanded) }
         }
-
         is EditableMap -> {
             node.isExpanded = expanded
             node.entries.forEach { setAllExpanded(it.value, expanded) }
         }
-
         else -> {}
+    }
+}
+
+class ReorderMapEntryCommand(
+    private val map: EditableMap,
+    private val fromIndex: Int,
+    private val toIndex: Int
+) : Command {
+    override fun execute() {
+        if (fromIndex in map.entries.indices && toIndex in map.entries.indices) {
+            val item = map.entries.removeAt(fromIndex)
+            map.entries.add(toIndex, item)
+        }
+    }
+
+    override fun undo() {
+        if (toIndex in map.entries.indices) {
+            val item = map.entries.removeAt(toIndex)
+            map.entries.add(fromIndex, item)
+        }
     }
 }

@@ -22,11 +22,13 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DragIndicator
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.onFocusChanged
@@ -49,14 +51,12 @@ import cc.worldmandia.kwebconverter.model.*
 import cc.worldmandia.kwebconverter.setPlainText
 import kotlinx.coroutines.launch
 
-// --- Colors for IDE look ---
-val KeyColor = Color(0xFFCFD8DC) // Light Grey for Keys
-val StringColor = Color(0xFFA5D6A7) // Soft Green
-val NumberColor = Color(0xFF90CAF9) // Soft Blue
-val BooleanColor = Color(0xFFFFCC80) // Soft Orange
-val NullColor = Color(0xFFEF9A9A)   // Soft Red
+val KeyColor = Color(0xFFCFD8DC)
+val StringColor = Color(0xFFA5D6A7)
+val NumberColor = Color(0xFF90CAF9)
+val BooleanColor = Color(0xFFFFCC80)
+val NullColor = Color(0xFFEF9A9A)
 val CommentColor = Color.Gray
-
 val CodeFont = FontFamily.Monospace
 
 @Composable
@@ -64,57 +64,101 @@ fun NodeRow(
     item: UiNode,
     isDuplicate: Boolean,
     cmdManager: CommandManager,
+    isDragging: Boolean = false,
     onFocus: (EditableNode) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
-    val backgroundColor = when {
-        isDuplicate -> MaterialTheme.colorScheme.errorContainer.copy(0.3f)
-        isHovered -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
-        else -> Color.Transparent
+    // Логика стиля для "места вставки" (плейсхолдера)
+    val targetModifier = if (isDragging) {
+        Modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(8.dp)
+            )
+    } else {
+        // Обычный стиль строки
+        val backgroundColor = when {
+            isDuplicate -> MaterialTheme.colorScheme.errorContainer.copy(0.3f)
+            isHovered -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
+            else -> Color.Transparent
+        }
+        Modifier.background(backgroundColor)
     }
 
-    Row(
-        Modifier
+    Box(
+        modifier = Modifier
             .fillMaxWidth()
-            .background(backgroundColor)
+            .then(targetModifier) // Применяем стиль (обычный или плейсхолдер)
             .hoverable(interactionSource)
-            .padding(vertical = 1.dp, horizontal = 4.dp), // Compact padding
-        verticalAlignment = Alignment.Top // Align top for multiline strings
+            .padding(vertical = 1.dp, horizontal = 4.dp)
     ) {
-        // Indentation
-        IndentationGuides(item.level)
+        // Если мы перетаскиваем элемент (isDragging), мы делаем его содержимое невидимым (alpha = 0),
+        // чтобы осталась только "коробка" (плейсхолдер) нужной высоты.
+        // Если не перетаскиваем — показываем контент (alpha = 1).
+        val contentAlpha = if (isDragging) 0f else 1f
 
-        // Expand icon / Spacer
-        ExpandControl(item.node)
+        Row(
+            modifier = Modifier.alpha(contentAlpha), // Скрываем контент, но сохраняем размеры
+            verticalAlignment = Alignment.Top
+        ) {
+            // Drag Handle (показываем всегда, чтобы отступы не прыгали, но активен только при наведении/драге)
+            // Разрешаем драг, если родитель List ИЛИ MapEntry
+            val isSortable = item.node.parent is EditableList || item.node.parent is EditableMapEntry
 
-        // Key (Map Key or List Index)
-        KeyField(
-            keyInfo = item.keyInfo,
-            isError = isDuplicate,
-            onFocus = { onFocus(item.node) }
-        )
+            if (isSortable) {
+                Icon(
+                    imageVector = Icons.Rounded.DragIndicator,
+                    contentDescription = "Drag",
+                    tint = if (isHovered && !isDragging) MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f) else Color.Transparent,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(4.dp)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                )
+            } else {
+                Spacer(Modifier.size(24.dp))
+            }
 
-        // Separator for Map
-        if (item.keyInfo is MapKey) {
-            Text(":", color = CommentColor, fontFamily = CodeFont, modifier = Modifier.padding(end = 8.dp))
-        }
+            IndentationGuides(item.level)
 
-        // Value Area
-        Box(Modifier.weight(1f).align(Alignment.CenterVertically)) {
-            when (val n = item.node) {
-                is EditableScalar -> ScalarEditor(n, onFocus)
-                is EditableList -> ContainerBadge("List", n.items.size, "[", "]")
-                is EditableMap -> ContainerBadge("Map", n.entries.size, "{", "}")
-                is EditableNull -> Text("null", color = NullColor, fontFamily = CodeFont, fontSize = 14.sp)
+            ExpandControl(item.node)
+
+            KeyField(
+                keyInfo = item.keyInfo,
+                isError = isDuplicate,
+                onFocus = { onFocus(item.node) }
+            )
+
+            if (item.keyInfo is MapKey) {
+                Text(":", color = CommentColor, fontFamily = CodeFont, modifier = Modifier.padding(end = 8.dp))
+            }
+
+            Box(Modifier.weight(1f).align(Alignment.CenterVertically)) {
+                when (val n = item.node) {
+                    is EditableScalar -> ScalarEditor(n, onFocus)
+                    is EditableList -> ContainerBadge("List", n.items.size, "[", "]")
+                    is EditableMap -> ContainerBadge("Map", n.entries.size, "{", "}")
+                    is EditableNull -> Text("null", color = NullColor, fontFamily = CodeFont, fontSize = 14.sp)
+                }
+            }
+
+            Box(Modifier.align(Alignment.CenterVertically)) {
+                NodeActionsMenu(item, cmdManager, visible = isHovered && !isDragging)
             }
         }
 
-        // Actions (Show only on hover or if menu is open)
-        // Note: For touch devices, you might want to always show this or use long press
-        Box(Modifier.align(Alignment.CenterVertically)) {
-            NodeActionsMenu(item, cmdManager, visible = isHovered)
+        // Опционально: текст "Drop here" внутри плейсхолдера
+        if (isDragging) {
+            Text(
+                text = "Drop here",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
     }
 }
