@@ -42,13 +42,23 @@ class FilesViewModel : ViewModel() {
 
     fun loadFilesContent() {
         viewModelScope.launch {
-            _files.update { current ->
-                current.map { file ->
-                    file.copy(
-                        cachedOriginalContent = file.originalFile.readString()
-                    )
+            val currentFiles = _files.value
+
+            val updatedFiles = currentFiles.map { file ->
+                if (file.cachedOriginalContent == null) {
+                    try {
+                        val content = file.originalFile.readString()
+                        file.copy(cachedOriginalContent = content)
+                    } catch (e: Exception) {
+                        println("Error reading file ${file.originalFile.name}: $e")
+                        file
+                    }
+                } else {
+                    file
                 }
             }
+
+            _files.update { _ -> updatedFiles }
         }
     }
 

@@ -43,10 +43,9 @@ fun MainScreen(filesViewModel: FilesViewModel, changePage: (NavKey) -> Unit) {
     ) { state ->
         when (state) {
             is FileKitPickerState.Started -> println("Loading...")
-            is FileKitPickerState.Progress -> filesViewModel.loadFile(state.processed.last())
             is FileKitPickerState.Completed -> {
+                filesViewModel.loadFile(state.result)
                 filesViewModel.loadFilesContent()
-                filesViewModel.restoreDraftsIfAny()
             }
 
             else -> {}

@@ -16,10 +16,7 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.byValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DragIndicator
@@ -30,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -43,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cc.worldmandia.kwebconverter.NodeSerializer
+import cc.worldmandia.kwebconverter.ParseResult
 import cc.worldmandia.kwebconverter.ParserType
 import cc.worldmandia.kwebconverter.logic.CommandManager
 import cc.worldmandia.kwebconverter.logic.MoveItemCommand
@@ -549,23 +548,41 @@ fun ContainerBadge(type: String, size: Int, openChar: String, closeChar: String)
 }
 
 @Composable
-fun IndentationGuides(level: Int) {
-    // Используем более чистую линию, а не много Box-ов
-    if (level > 0) {
-        Row(Modifier.width((level * 20).dp)) { // Reduced width multiplier
-            repeat(level) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    VerticalDivider(
-                        modifier = Modifier.align(Alignment.CenterEnd),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                    )
-                }
-            }
+fun ParseError(error: ParseResult.Error, backButton: () -> Unit) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error)
+            Text("Error parsing file", style = MaterialTheme.typography.titleLarge)
+            Text(error.message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Button(onClick = backButton) { Text("Go Back") }
         }
+    }
+}
+
+@Composable
+fun IndentationGuides(level: Int) {
+    val lineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+    val widthPerLevel = 20.dp
+
+    if (level > 0) {
+        Spacer(
+            modifier = Modifier
+                .width(widthPerLevel * level)
+                .fillMaxHeight()
+                .drawBehind {
+                    val strokeWidth = 1.dp.toPx()
+                    val step = size.width / level
+                    repeat(level) { i ->
+                        val x = step * (i + 1) - (strokeWidth / 2)
+                        drawLine(
+                            color = lineColor,
+                            start = androidx.compose.ui.geometry.Offset(x, 0f),
+                            end = androidx.compose.ui.geometry.Offset(x, size.height),
+                            strokeWidth = strokeWidth
+                        )
+                    }
+                }
+        )
     }
 }
 

@@ -51,7 +51,7 @@ fun FileEditorScreen(
 
     val parsedRoot = when (val parsed = FileParser.parseFile(file)) {
         is ParseResult.Error -> {
-            // TODO: показать ошибку или вернуть
+            ParseError(parsed, back)
             return
         }
 
@@ -100,7 +100,10 @@ fun FileEditorScreen(
 
     val handleReset = {
         when (val freshRoot = FileParser.parseFile(file.also { f -> f.resetCache() })) {
-            is ParseResult.Error -> TODO()
+            is ParseResult.Error -> {
+
+            }
+
             is ParseResult.Success -> {
                 editableRoot.rootNode = freshRoot.root.rootNode
                 cmdManager.clear()
