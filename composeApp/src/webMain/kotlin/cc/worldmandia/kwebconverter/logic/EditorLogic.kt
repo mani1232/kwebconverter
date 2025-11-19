@@ -73,6 +73,7 @@ class AddItemCommand(
                 parent.isExpanded = true
                 addedNode = newNode
             }
+
             is EditableMap -> {
                 val newKey = UniqueKeyGenerator.generate(parent, "key")
                 val entry = EditableMapEntry(newKey, EditableNull(null), parent)
@@ -85,6 +86,7 @@ class AddItemCommand(
                 parent.isExpanded = true
                 addedNode = entry
             }
+
             else -> {}
         }
     }
@@ -110,6 +112,7 @@ class RemoveNodeCommand(private val node: EditableNode) : Command {
                 index = p.items.indexOf(node)
                 p.items.remove(node)
             }
+
             is EditableMapEntry -> {
                 val map = p.parentMap
                 container = map
@@ -117,6 +120,7 @@ class RemoveNodeCommand(private val node: EditableNode) : Command {
                 index = map.entries.indexOf(p)
                 map.entries.remove(p)
             }
+
             else -> {}
         }
     }
@@ -240,10 +244,12 @@ fun setAllExpanded(node: EditableNode, expanded: Boolean) {
             node.isExpanded = expanded
             node.items.forEach { setAllExpanded(it, expanded) }
         }
+
         is EditableMap -> {
             node.isExpanded = expanded
             node.entries.forEach { setAllExpanded(it.value, expanded) }
         }
+
         else -> {}
     }
 }

@@ -635,6 +635,22 @@ fun NodeActionsMenu(
                 )
             }
 
+            if (item.node !is EditableMap) {
+                DropdownMenuItem(
+                    text = { Text("Wrap in Map") },
+                    onClick = {
+                        cmdManager.execute(ReplaceNodeCommand(item.node) {
+                            val map = EditableMap(emptyList(), parent)
+                            val entry = EditableMapEntry("change_key", EditableNull(null), map)
+                            entry.value = item.node.clone(entry)
+                            map.entries.add(entry)
+                            map
+                        })
+                        expanded = false
+                    }
+                )
+            }
+
             HorizontalDivider()
 
             DropdownMenuItem(

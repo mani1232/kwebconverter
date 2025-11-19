@@ -52,7 +52,7 @@ class EditableList(
     override val id: String = generateId()
 ) : EditableNode, ParentContainer {
     val items = mutableStateListOf<EditableNode>().apply { addAll(initialItems) }
-    var isExpanded by mutableStateOf(true)
+    var isExpanded by mutableStateOf(false)
     override var requestFocus by mutableStateOf(false)
 
     override fun replaceChild(oldNode: EditableNode, newNode: EditableNode) {
@@ -96,7 +96,7 @@ class EditableMap(
     override val id: String = generateId()
 ) : EditableNode, ParentContainer {
     val entries = mutableStateListOf<EditableMapEntry>().apply { addAll(initialEntries) }
-    var isExpanded by mutableStateOf(true)
+    var isExpanded by mutableStateOf(false)
     override var requestFocus by mutableStateOf(false)
 
     val duplicateKeys by derivedStateOf {

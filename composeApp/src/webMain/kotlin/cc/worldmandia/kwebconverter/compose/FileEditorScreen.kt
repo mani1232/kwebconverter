@@ -9,9 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import cc.worldmandia.kwebconverter.FileParser
 import cc.worldmandia.kwebconverter.NodeSerializer
@@ -202,7 +200,13 @@ fun FileEditorScreen(
                                             val fromIndex = targetMap.entries.indexOf(fromNode.parent)
                                             val toIndex = targetMap.entries.indexOf(parent)
                                             if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
-                                                cmdManager.execute(ReorderMapEntryCommand(targetMap, fromIndex, toIndex))
+                                                cmdManager.execute(
+                                                    ReorderMapEntryCommand(
+                                                        targetMap,
+                                                        fromIndex,
+                                                        toIndex
+                                                    )
+                                                )
                                             }
                                         }
                                     }
@@ -214,34 +218,95 @@ fun FileEditorScreen(
                                     Surface(
                                         shadowElevation = 12.dp,
                                         shape = RoundedCornerShape(8.dp),
-                                        color = MaterialTheme.colorScheme.surfaceContainerHighest, // Контрастный фон
-                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        border = BorderStroke(
+                                            1.dp,
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                        ),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .wrapContentHeight(unbounded = true, align = Alignment.Top)
                                     ) {
                                         Column(Modifier.padding(8.dp)) {
-                                            // Сама строка заголовка
+                                            // 1. Заголовок самого контейнера (Ваше предыдущее исправление isDragging = false)
                                             NodeRow(
                                                 item = item,
                                                 isDuplicate = false,
                                                 cmdManager = cmdManager,
-                                                isDragging = true, // Чтобы подсветить иконку
+                                                isDragging = false,
                                                 onFocus = {}
                                             )
 
-                                            // Визуализация скрытого контента
+                                            // 2. Визуализация дочерних элементов (ВМЕСТО текстовой заглушки)
                                             if (isContainer) {
-                                                HorizontalDivider(
-                                                    modifier = Modifier.padding(vertical = 4.dp),
-                                                    color = MaterialTheme.colorScheme.outlineVariant
-                                                )
-                                                Text(
-                                                    text = "... nested content ...",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    modifier = Modifier.padding(start = 32.dp, bottom = 4.dp)
-                                                )
+                                                val node = item.node
+                                                // Проверяем, развернут ли узел, чтобы превью соответствовало виду в списке
+                                                val isExpanded = (node as? EditableList)?.isExpanded == true ||
+                                                        (node as? EditableMap)?.isExpanded == true
+
+                                                if (isExpanded) {
+                                                    HorizontalDivider(
+                                                        modifier = Modifier.padding(vertical = 4.dp),
+                                                        color = MaterialTheme.colorScheme.outlineVariant
+                                                    )
+
+                                                    // Берем первые 5 элементов для предпросмотра, чтобы не перегружать рендеринг
+                                                    val previewLimit = 5
+                                                    val (children, totalCount) = when (node) {
+                                                        is EditableList -> {
+                                                            val items = node.items
+                                                            items.take(previewLimit).mapIndexed { index, child ->
+                                                                UiNode(
+                                                                    id = "${item.id}_preview_$index", // Временный ID
+                                                                    node = child,
+                                                                    keyInfo = ListIndex(index),
+                                                                    level = item.level + 1, // Увеличиваем уровень вложенности
+                                                                    onDelete = {}
+                                                                )
+                                                            } to items.size
+                                                        }
+
+                                                        is EditableMap -> {
+                                                            val entries = node.entries
+                                                            entries.take(previewLimit).map { entry ->
+                                                                UiNode(
+                                                                    id = "${item.id}_preview_${entry.id}",
+                                                                    node = entry.value,
+                                                                    keyInfo = MapKey(entry.keyState, entry),
+                                                                    level = item.level + 1,
+                                                                    onDelete = {}
+                                                                )
+                                                            } to entries.size
+                                                        }
+                                                    }
+
+                                                    // Рендерим детей
+                                                    children.forEach { childUi ->
+                                                        NodeRow(
+                                                            item = childUi,
+                                                            isDuplicate = false,
+                                                            cmdManager = cmdManager,
+                                                            isDragging = false, // Важно: контент видим
+                                                            onFocus = {}
+                                                        )
+                                                    }
+
+                                                    // Если элементов больше лимита, показываем аккуратную подпись
+                                                    if (totalCount > previewLimit) {
+                                                        val indentDp =
+                                                            ((item.level + 1) * 20).dp // Примерный отступ, соответствующий IndentationGuides
+                                                        Text(
+                                                            text = "... еще ${totalCount - previewLimit} ...",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.padding(
+                                                                start = indentDp + 8.dp,
+                                                                top = 4.dp,
+                                                                bottom = 4.dp
+                                                            )
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
