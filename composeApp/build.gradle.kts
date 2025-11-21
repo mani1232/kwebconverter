@@ -20,9 +20,10 @@ kotlin {
     }
 
     androidLibrary {
-        namespace = group.toString()
+        namespace = "cc.worldmandia.kwebconverter"
         compileSdk { version = preview("36.1") }
         androidResources.enable = true
+        minSdk = 21
     }
 
     @OptIn(ExperimentalWasmDsl::class)
@@ -37,7 +38,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.compose.ui)
-            implementation(libs.compose.ui.tooling)
+            //implementation(libs.compose.ui.tooling)
         }
 
         commonMain.dependencies {

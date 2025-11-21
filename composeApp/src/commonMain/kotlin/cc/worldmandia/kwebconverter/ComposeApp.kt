@@ -3,6 +3,7 @@ package cc.worldmandia.kwebconverter
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
@@ -33,6 +34,7 @@ data class EditorRoute(val file: ProjectFile) : NavKey
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3ExpressiveApi::class, KoinExperimentalAPI::class)
 @Composable
+@Preview
 fun StartComposeApp() {
     KoinApplication(application = { modules(appModule) }) {
         AppTheme {
