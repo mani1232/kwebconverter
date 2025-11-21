@@ -44,7 +44,6 @@ import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import js.core.JsPrimitives.toKotlinString
 import kwebconverter.composeapp.generated.resources.Res
-import org.w3c.dom.get
 import org.w3c.files.FileReader
 import org.w3c.files.get
 
@@ -77,26 +76,26 @@ fun DashboardScreen(
             override fun onDrop(event: DragAndDropEvent): Boolean {
                 val clipData = event.transferData?.domDataTransferOrNull ?: return false
                 if (clipData.files.length > 0) {
-                    println(clipData.types.toList())
                     for (i in 0..clipData.items.length) {
-                        println(clipData.files.get(i)?.type)
-                        println(clipData.files.get(i)?.name)
-                        println(clipData.items.get(i)?.type)
-                        println(clipData.items.get(i)?.kind)
-
-
                         clipData.files[i]?.let { file ->
                             FileReader().apply {
                                 onloadend = { _ ->
-                                    println((result as JsString).toKotlinString())
+                                    file.name.split(".").let {
+                                        viewModel.onFilesSelected(
+                                            ProjectFile(
+                                                name = it[0],
+                                                extension = it[1],
+                                                content = (result as JsString?)?.toKotlinString() ?: "[]",
+                                            )
+                                        )
+                                    }
                                 }
                                 onerror = { event ->
                                     println(event.type)
                                 }
                             }.readAsText(file)
-                        }
+                        } ?: println("Warning: Failed to load file ${clipData.files[i]?.name ?: "$i not found"}")
                     }
-
                     return true
                 }
                 return false
@@ -179,7 +178,12 @@ fun DashboardScreen(
 fun FileUploadCard(modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
         Column(Modifier.padding(16.dp)) {
-            Icon(Icons.Default.UploadFile, "Add new file", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.align(Alignment.CenterHorizontally).size(32.dp))
+            Icon(
+                Icons.Default.UploadFile,
+                "Add new file",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.CenterHorizontally).size(32.dp)
+            )
             Spacer(Modifier.width(16.dp))
             Text("Drop file here", modifier = Modifier.align(Alignment.CenterHorizontally))
         }

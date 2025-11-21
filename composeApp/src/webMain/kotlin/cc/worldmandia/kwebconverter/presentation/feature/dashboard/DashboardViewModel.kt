@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 class DashboardViewModel : ViewModel() {
 
@@ -34,7 +33,6 @@ class DashboardViewModel : ViewModel() {
                     }
 
                     ProjectFile(
-                        id = Uuid.random().toHexString(),
                         name = file.nameWithoutExtension,
                         extension = ext,
                         content = content,
@@ -46,6 +44,24 @@ class DashboardViewModel : ViewModel() {
                 }
             }
             _files.update { it + newFiles }
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    fun onFilesSelected(projectFile: ProjectFile) {
+        viewModelScope.launch {
+            try {
+                val ext = projectFile.extension.lowercase()
+                val format = when (ext) {
+                    "json" -> FileFormat.JSON5
+                    "yaml", "yml" -> FileFormat.YAML
+                    else -> FileFormat.UNSUPPORTED
+                }
+
+                _files.update { it + projectFile.copy(format = format) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
