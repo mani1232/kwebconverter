@@ -15,7 +15,7 @@ compose-korender = "0.5.1-SNAPSHOT"
 composePwa = "0.4.2"
 compose-haze = "1.7.0"
 composeIcons = "1.7.3"
-agp = "9.0.0-beta01"
+agp = "9.0.0-beta02"
 
 [libraries]
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
@@ -43,7 +43,6 @@ androidx-material3 = { module = "org.jetbrains.compose.material3:material3", ver
 compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "composeMultiplatform" }
 compose-foundation = { group = "org.jetbrains.compose.foundation", name = "foundation", version.ref = "composeMultiplatform" }
 compose-ui = { group = "org.jetbrains.compose.ui", name = "ui", version.ref = "composeMultiplatform" }
-compose-ui-tooling = { group = "org.jetbrains.compose.ui-tooling", name = "ui", version.ref = "composeMultiplatform" }
 compose-ui-tooling-preview = { group = "org.jetbrains.compose.ui", name = "ui-tooling-preview", version.ref = "composeMultiplatform" }
 compose-components-resources = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "composeMultiplatform" }
 compose-material-icons-extended = { group = "org.jetbrains.compose.material", name = "material-icons-extended", version.ref = "composeIcons" }
@@ -61,9 +60,9 @@ filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose
 compose-common = [
     "compose-runtime",
     "compose-foundation",
-    "compose-ui",
     "compose-components-resources",
-    "compose-ui-tooling-preview"
+    "compose-ui-tooling-preview",
+    "compose-ui",
 ]
 
 [plugins]
