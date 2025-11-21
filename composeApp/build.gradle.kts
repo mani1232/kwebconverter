@@ -22,12 +22,12 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.ui)
-            implementation(compose.materialIconsExtended)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation("org.jetbrains.compose.runtime:runtime:1.10.10-alpha01+dev3301")
+            implementation("org.jetbrains.compose.foundation:foundation:1.10.10-alpha01+dev3301")
+            implementation("org.jetbrains.compose.ui:ui:1.10.10-alpha01+dev3301")
+            implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+            implementation("org.jetbrains.compose.components:components-resources:1.10.10-alpha01+dev3301")
+            implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.10.10-alpha01+dev3301")
 
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime)
@@ -51,6 +51,8 @@ kotlin {
 
             implementation(libs.compose.dnd)
             implementation(libs.compose.korender)
+            implementation(libs.compose.haze)
+            implementation(libs.compose.haze.materials)
 
             implementation(libs.filekit.core)
             implementation(libs.filekit.dialogs)

@@ -1,5 +1,7 @@
 package cc.worldmandia.kwebconverter.presentation.feature.dashboard
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,12 +9,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropEvent
+import androidx.compose.ui.draganddrop.DragAndDropTarget
+import androidx.compose.ui.draganddrop.domDataTransferOrNull
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cc.worldmandia.kwebconverter.core.OrbitCamera
@@ -26,12 +33,25 @@ import com.zakgof.korender.math.Transform.Companion.scale
 import com.zakgof.korender.math.Vec3
 import com.zakgof.korender.math.y
 import com.zakgof.korender.math.z
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.FileKitPickerState
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import js.core.JsPrimitives.toKotlinString
 import kwebconverter.composeapp.generated.resources.Res
+import org.w3c.dom.get
+import org.w3c.files.FileReader
+import org.w3c.files.get
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(
+    ExperimentalMaterial3ExpressiveApi::class, ExperimentalComposeUiApi::class, ExperimentalWasmJsInterop::class,
+    ExperimentalHazeMaterialsApi::class
+)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
@@ -39,13 +59,64 @@ fun DashboardScreen(
 ) {
     val files by viewModel.files.collectAsStateWithLifecycle()
 
+    var isBlurEnabled by remember { mutableStateOf(false) }
+    val hazeState = rememberHazeState(isBlurEnabled)
+
     val launcher = rememberFilePickerLauncher(
         mode = FileKitMode.MultipleWithState(maxItems = 5),
         type = FileKitType.File(extensions = listOf("yml", "yaml", "json", "json5")),
         title = "Open config files"
     ) { state ->
-        if (state is io.github.vinceglb.filekit.dialogs.FileKitPickerState.Completed) {
+        if (state is FileKitPickerState.Completed) {
             viewModel.onFilesSelected(state.result)
+        }
+    }
+
+    val callback = remember {
+        object : DragAndDropTarget {
+            override fun onDrop(event: DragAndDropEvent): Boolean {
+                val clipData = event.transferData?.domDataTransferOrNull ?: return false
+                if (clipData.files.length > 0) {
+                    println(clipData.types.toList())
+                    for (i in 0..clipData.items.length) {
+                        println(clipData.files.get(i)?.type)
+                        println(clipData.files.get(i)?.name)
+                        println(clipData.items.get(i)?.type)
+                        println(clipData.items.get(i)?.kind)
+
+
+                        clipData.files[i]?.let { file ->
+                            FileReader().apply {
+                                onloadend = { _ ->
+                                    println((result as JsString).toKotlinString())
+                                }
+                                onerror = { event ->
+                                    println(event.type)
+                                }
+                            }.readAsText(file)
+                        }
+                    }
+
+                    return true
+                }
+                return false
+            }
+
+            override fun onStarted(event: DragAndDropEvent) {
+                isBlurEnabled = true
+                hazeState.blurEnabled = isBlurEnabled
+            }
+
+            override fun onEnded(event: DragAndDropEvent) {
+                isBlurEnabled = false
+                hazeState.blurEnabled = isBlurEnabled
+            }
+
+
+            override fun onExited(event: DragAndDropEvent) {
+                isBlurEnabled = false
+                hazeState.blurEnabled = isBlurEnabled
+            }
         }
     }
 
@@ -56,21 +127,30 @@ fun DashboardScreen(
                 icon = { Icon(Icons.Default.Add, null) },
                 text = { Text("Open File", fontFamily = MainFont) },
             )
-        }
+        },
+        modifier = Modifier.fillMaxSize().dragAndDropTarget(
+            shouldStartDragAndDrop = { event ->
+                (event.transferData?.domDataTransferOrNull)?.also {
+                    it.dropEffect = "copy"
+                    it.effectAllowed = "all"
+                } != null
+            },
+            target = callback
+        )
     ) { padding ->
-        Column(Modifier.padding(padding).padding(16.dp)) {
+        Column(Modifier.padding(padding).padding(16.dp).fillMaxSize().hazeSource(hazeState)) {
             Text("Projects", style = MaterialTheme.typography.headlineMedium, fontFamily = MainFont)
             Spacer(Modifier.height(16.dp))
 
             if (files.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Text("No open files.\nClick + to start.", fontFamily = MainFont)
                     //Column(modifier = Modifier.width(400.dp).height(400.dp).align(Alignment.CenterStart)) {
                     //    GltfExample()
                     //}
-                    Column(modifier = Modifier.width(400.dp).height(400.dp).align(Alignment.CenterEnd)) {
-                        ObjFileExample(MaterialTheme.colorScheme.surface)
-                    }
+                    //Column(modifier = Modifier.width(400.dp).height(400.dp).align(Alignment.CenterEnd)) {
+                    //    ObjFileExample(MaterialTheme.colorScheme.surface)
+                    //}
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -79,6 +159,29 @@ fun DashboardScreen(
                     }
                 }
             }
+        }
+
+        if (isBlurEnabled) {
+            Column(
+                modifier = Modifier.fillMaxSize().background(Color.Transparent)
+                    .hazeEffect(state = hazeState, style = HazeMaterials.ultraThin())
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    FileUploadCard()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+@Preview
+fun FileUploadCard(modifier: Modifier = Modifier) {
+    Card(modifier = modifier) {
+        Column(Modifier.padding(16.dp)) {
+            Icon(Icons.Default.UploadFile, "Add new file", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.align(Alignment.CenterHorizontally).size(32.dp))
+            Spacer(Modifier.width(16.dp))
+            Text("Drop file here", modifier = Modifier.align(Alignment.CenterHorizontally))
         }
     }
 }
