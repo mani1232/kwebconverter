@@ -17,6 +17,8 @@ compose-haze = "1.7.0"
 composeIcons = "1.7.3"
 agp = "9.0.0-beta02"
 ksp = "2.3.3"
+store = "5.1.0-alpha07"
+multiplatformSettings = "1.3.0"
 
 [libraries]
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
@@ -52,6 +54,8 @@ compose-dnd = { module = "com.mohamedrejeb.dnd:compose-dnd", version.ref = "comp
 compose-korender = { module = "com.github.zakgof:korender", version.ref = "compose-korender" }
 compose-haze = { module = "dev.chrisbanes.haze:haze", version.ref = "compose-haze" }
 compose-haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "compose-haze" }
+store = { module = "org.mobilenativefoundation.store:store5", version.ref = "store" }
+multiplatformSettings = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }
 
 filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }
 filekit-dialogs = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekit" }

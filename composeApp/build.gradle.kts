@@ -76,6 +76,8 @@ kotlin {
             implementation(libs.compose.haze)
             implementation(libs.compose.haze.materials)
 
+            implementation(libs.multiplatformSettings)
+
             implementation(libs.filekit.core)
             implementation(libs.filekit.dialogs)
             implementation(libs.filekit.dialogs.compose)

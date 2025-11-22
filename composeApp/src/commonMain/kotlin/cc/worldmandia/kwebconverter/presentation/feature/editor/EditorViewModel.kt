@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cc.worldmandia.kwebconverter.domain.model.ProjectFile
 import cc.worldmandia.kwebconverter.domain.repository.IFileRepository
+import cc.worldmandia.kwebconverter.domain.repository.saveAsFile
 import cc.worldmandia.kwebconverter.domain.usecase.ParseContentUseCase
 import cc.worldmandia.kwebconverter.presentation.feature.editor.logic.Command
 import cc.worldmandia.kwebconverter.presentation.feature.editor.logic.CommandManager
@@ -90,7 +91,7 @@ class EditorViewModel(
         val state = _uiState.value as? EditorUiState.Content ?: return
         viewModelScope.launch {
             val content = NodeSerializer.serialize(state.root.rootNode, state.fileInfo.format)
-            repository.saveFile(state.fileInfo.copy(content = content))
+            repository.saveAsFile(state.fileInfo.copy(content = content))
             repository.clearDraft(state.fileInfo.id)
         }
     }
