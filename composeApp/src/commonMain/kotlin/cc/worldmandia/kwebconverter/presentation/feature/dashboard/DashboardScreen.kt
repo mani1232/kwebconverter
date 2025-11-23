@@ -114,7 +114,8 @@ fun DashboardScreen(
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Text("No open files.\nClick + to start.", fontFamily = MainFont)
                     Column(modifier = Modifier.width(400.dp).height(400.dp).align(Alignment.CenterStart)) {
-                        GltfExample(MaterialTheme.colorScheme.surface)
+                        TestChangeColor(MaterialTheme.colorScheme.surface)
+                        //GltfExample(MaterialTheme.colorScheme.surface)
                     }
                     //Column(modifier = Modifier.width(400.dp).height(400.dp).align(Alignment.CenterEnd)) {
                     //    ObjFileExample(MaterialTheme.colorScheme.surface)
@@ -186,20 +187,42 @@ fun FileCard(file: ProjectFile, onClick: () -> Unit) {
 
 @Composable
 fun GltfExample(surface: Color) = Korender(appResourceLoader = { Res.readBytes(it) }) {
-    val orbitCamera = OrbitCamera(this, 20.z, 3.y)
+    val orbitCamera = OrbitCamera(20.z, 3.y)
     OnTouch { orbitCamera.touch(it) }
     Frame {
-        base(Color.Green.toRGBA())
+        base(ColorRGBA.Green)
         background = with(surface) {
             ColorRGBA(red, green, blue, 1f)
         }
-        camera = orbitCamera.camera(projection, width, height)
+        camera = orbitCamera.run { camera() }
         DirectionalLight(Vec3(1.0f, -1.0f, -1.0f), white(3f))
         AmbientLight(white(0.6f))
         Gltf(
             resource = "models/dress.glb",
-            //transform = scale(0.03f).rotate(1.y, frameInfo.time)
+            transform = scale(0.03f)//.rotate(1.y, frameInfo.time)
         )
+    }
+}
+
+@Composable
+fun TestChangeColor(surface: Color) {
+    Korender(appResourceLoader = { Res.readBytes(it) }) {
+        val orbitCamera = OrbitCamera(20.z, 3.y)
+        OnTouch { orbitCamera.touch(it) }
+        Frame {
+            camera = orbitCamera.run { camera() }
+            background = with(surface) {
+                ColorRGBA(red, green, blue, 1f)
+            }
+            DirectionalLight(Vec3(1.0f, -1.0f, -1.0f), white(3f))
+            Gltf(
+                resource = "models/dress.glb",
+                materialOverrides = mapOf(
+                    "FABRIC_1_FRONT_1309" to base(color = ColorRGBA.Green, metallicFactor = 0.0f, roughnessFactor = 0.9f),
+                ),
+                transform = scale(0.0025f).rotate(Vec3(1f, 0f, 0f), -1.57f).rotate(Vec3(0f, 1f, 0f), frameInfo.time),
+            )
+        }
     }
 }
 
@@ -208,14 +231,14 @@ private fun Color.toRGBA(a: Float = 1f) = ColorRGBA(red, green, blue, a)
 @Composable
 fun ObjFileExample(surface: Color) {
     Korender(appResourceLoader = { Res.readBytes(it) }) {
-        val orbitCamera = OrbitCamera(this, 20.z, 0.z)
+        val orbitCamera = OrbitCamera(20.z, 0.z)
         OnTouch { orbitCamera.touch(it) }
         Frame {
             background = with(surface) {
                 ColorRGBA(red, green, blue, 1f)
             }
             DirectionalLight(Vec3(1.0f, -1.0f, -1.0f), white(3f))
-            camera = orbitCamera.camera(projection, width, height)
+            camera = orbitCamera.run { camera() }
             Renderable(
                 base(colorTexture = texture("models/head.jpg"), metallicFactor = 0.3f, roughnessFactor = 0.5f),
                 mesh = obj("models/head.obj"),
