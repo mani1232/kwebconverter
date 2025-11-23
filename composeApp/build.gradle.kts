@@ -88,6 +88,7 @@ kotlin {
 
         webMain.dependencies {
             implementation(kotlinWrappers.browser)
+            implementation(kotlinWrappers.web)
         }
     }
 }

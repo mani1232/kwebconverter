@@ -3,6 +3,10 @@
         {
             "type": "add",
             "pluginName": "fleet.mercury"
+        },
+        {
+            "type": "add",
+            "pluginName": "fleet.kotlin"
         }
     ]
 }
