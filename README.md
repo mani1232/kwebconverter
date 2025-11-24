@@ -1,4 +1,6 @@
-This is a Kotlin Multiplatform project targeting Web.
+This is a Kotlin Multiplatform project targeting Web and Android.
+
+[![Update Pages](https://github.com/mani1232/kwebconverter/actions/workflows/gradle.yml/badge.svg?branch=master)](https://github.com/mani1232/kwebconverter/actions/workflows/gradle.yml)
 
 * [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
   It contains several subfolders:
