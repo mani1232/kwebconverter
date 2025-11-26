@@ -1,4 +1,4 @@
-rootProject.name = "kwebconverter"
+rootProject.name = "KWebConverter"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

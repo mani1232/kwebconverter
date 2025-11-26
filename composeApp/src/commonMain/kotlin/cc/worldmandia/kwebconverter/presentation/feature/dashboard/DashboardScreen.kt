@@ -113,10 +113,10 @@ fun DashboardScreen(
             if (files.isEmpty()) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Text("No open files.\nClick + to start.", fontFamily = MainFont)
-                    Column(modifier = Modifier.width(400.dp).height(400.dp).align(Alignment.CenterStart)) {
-                        TestChangeColor(MaterialTheme.colorScheme.surface)
-                        //GltfExample(MaterialTheme.colorScheme.surface)
-                    }
+                    //Column(modifier = Modifier.width(400.dp).height(400.dp).align(Alignment.CenterStart)) {
+                    //    TestChangeColor(MaterialTheme.colorScheme.surface)
+                    //    GltfExample(MaterialTheme.colorScheme.surface)
+                    //}
                     //Column(modifier = Modifier.width(400.dp).height(400.dp).align(Alignment.CenterEnd)) {
                     //    ObjFileExample(MaterialTheme.colorScheme.surface)
                     //}
