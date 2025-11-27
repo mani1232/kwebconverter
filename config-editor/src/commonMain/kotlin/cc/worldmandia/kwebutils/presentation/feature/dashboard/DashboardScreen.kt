@@ -107,7 +107,7 @@ fun DashboardScreen(
         )
     ) { padding ->
         Column(Modifier.padding(padding).padding(16.dp).fillMaxSize().hazeSource(hazeState)) {
-            Text("Projects", style = MaterialTheme.typography.headlineMedium, fontFamily = MainFont)
+            Text("Config Editor | Files", style = MaterialTheme.typography.headlineMedium, fontFamily = MainFont)
             Spacer(Modifier.height(16.dp))
 
             if (files.isEmpty()) {
