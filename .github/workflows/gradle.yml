@@ -37,17 +37,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Cache Gradle directories
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            .gradle
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties') }}-${{ hashFiles('**/*.gradle*','**/*.kts') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
-
       - name: Verify Java
         run: java -version
 
