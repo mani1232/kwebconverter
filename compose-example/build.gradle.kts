@@ -41,7 +41,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":composeApp"))
+    implementation(project(":config-editor"))
     implementation(libs.androidx.activity.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
