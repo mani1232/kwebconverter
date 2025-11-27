@@ -39,6 +39,31 @@ ktor {
         jib {
             container {
                 workingDirectory = "/home/container"
+                jvmFlags = listOf(
+                    "-XX:+UnlockExperimentalVMOptions",
+                    "-XX:+UnlockDiagnosticVMOptions",
+                    "-XX:+AlwaysActAsServerClassMachine",
+                    "-XX:+AlwaysPreTouch",
+                    "-XX:+DisableExplicitGC",
+                    "-XX:NmethodSweepActivity=1",
+                    "-XX:ReservedCodeCacheSize=400M",
+                    "-XX:NonNMethodCodeHeapSize=12M",
+                    "-XX:ProfiledCodeHeapSize=194M",
+                    "-XX:NonProfiledCodeHeapSize=194M",
+                    "-XX:-DontCompileHugeMethods",
+                    "-XX:MaxNodeLimit=240000",
+                    "-XX:NodeLimitFudgeFactor=8000",
+                    "-XX:+UseVectorCmov",
+                    "-XX:+PerfDisableSharedMem",
+                    "-XX:+UseFastUnorderedTimeStamps",
+                    "-XX:+UseCriticalJavaThreadPriority",
+                    "-XX:ThreadPriorityPolicy=1",
+                    "-XX:+UseZGC",
+                    "-XX:AllocatePrefetchStyle=1",
+                    "-XX:-ZProactive",
+                    "-Dterminal.jline=false",
+                    "-Dterminal.ansi=true"
+                )
             }
         }
     }
