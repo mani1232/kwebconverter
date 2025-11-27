@@ -47,4 +47,5 @@ dependencyResolutionManagement {
 
 include(":config-editor")
 //include(":composeexample") // Only for Android or maybe for non-web targets
-include("index-menu")
+include(":index-menu")
+include(":backend")

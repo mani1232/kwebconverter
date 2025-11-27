@@ -1,3 +1,6 @@
+import cc.worldmandia.FrontEnd.MENU_APP
+import cc.worldmandia.FrontEnd.wasmApps
+
 plugins {
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
@@ -7,16 +10,15 @@ plugins {
     alias(libs.plugins.androidMultiplatform) apply false
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.ktor) apply false
+    alias(libs.plugins.kotlinJvm) apply false
 }
 
-val wasmApps = listOf("config-editor")
-val menuApp = "index-menu"
-
-tasks.register("publishWebHub") {
+tasks.register("publishKWebUtils") {
     group = "distribution"
     description = "Collects Menu in the root and Apps in subfolders"
 
-    dependsOn(":$menuApp:jsBrowserDistribution")
+    dependsOn(":${MENU_APP}:jsBrowserDistribution")
     dependsOn(wasmApps.map { ":$it:wasmJsBrowserDistribution" })
 
     doLast {
@@ -26,7 +28,7 @@ tasks.register("publishWebHub") {
 
         println("📂 Assembling site in: ${wwwDir.absolutePath}")
 
-        val menuDist = project(":$menuApp").layout.buildDirectory
+        val menuDist = project(":$MENU_APP").layout.buildDirectory
             .dir("dist/js/productionExecutable").get().asFile
 
         if (menuDist.exists()) {
