@@ -24,11 +24,10 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
-        maven("https://repo.worldmandia.cc/snapshots")
-        mavenLocal()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-        maven("https://central.sonatype.com/repository/maven-snapshots/")
         maven("https://packages.jetbrains.team/maven/p/firework/dev")
+        maven("https://repo.worldmandia.cc/snapshots")
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
         google {
             mavenContent {
                 includeGroupAndSubgroups("androidx")
@@ -47,7 +46,7 @@ dependencyResolutionManagement {
         create("custom") {
             from(files("gradle/custom.versions.toml"))
 
-            val devVersion = settings.providers.gradleProperty("devVersion").getOrElse("+dev3326")
+            val devVersion = providers.gradleProperty("compose-dev.version").getOrElse("+dev3326")
 
             version("androidx-lifecycle", "2.10.0-alpha07$devVersion")
             version("androidx-nav3", "1.0.0-alpha07$devVersion")
