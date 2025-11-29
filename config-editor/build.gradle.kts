@@ -10,7 +10,7 @@ plugins {
     alias(custom.plugins.androidMultiplatform)
     alias(custom.plugins.ksp)
     alias(custom.plugins.composeHotReload)
-    //alias(custom.plugins.composePwa)
+    alias(custom.plugins.composePwa)
 }
 
 kotlin {
