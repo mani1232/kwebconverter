@@ -60,7 +60,7 @@ actual fun onDragAndDropEvent(): (DragAndDropEvent) -> Boolean = { event ->
 actual fun WebBackButton() {
     val isPwa by rememberIsPwaState()
 
-    if (isPwa) {
+    if (!isPwa) {
         IconButton(onClick = {
             window.history.back()
         }) {
