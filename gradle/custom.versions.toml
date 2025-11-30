@@ -86,6 +86,7 @@ exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "e
 exposed-crypt = { module = "org.jetbrains.exposed:exposed-crypt", version.ref = "exposed" }
 exposed-r2dbc = { module = "org.jetbrains.exposed:exposed-r2dbc", version.ref = "exposed" }
 exposed-postgresql = { module = "org.postgresql:r2dbc-postgresql", version.ref = "postgresql" }
+exposed-migration = { module = "org.jetbrains.exposed:exposed-migration-r2dbc", version.ref = "exposed" }
 ktoml = { module = "com.akuleshov7:ktoml-core", version.ref = "ktoml" }
 
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -155,6 +156,7 @@ exposed = [
     "exposed-crypt",
     "exposed-r2dbc",
     "exposed-postgresql",
+    "exposed-migration",
 ]
 
 [plugins]

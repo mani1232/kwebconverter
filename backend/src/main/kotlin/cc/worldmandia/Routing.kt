@@ -19,7 +19,9 @@ fun Application.configureRouting() {
     install(Resources)
     install(StatusPages) {
         exception<Throwable> { call, cause ->
-            call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
+            // TODO remove cause
+            call.response.header("Refresh", "5; url=/")
+            call.respondText(text = "500: $cause. You will be redirected in 5 seconds.", status = HttpStatusCode.InternalServerError)
         }
         status(HttpStatusCode.NotFound) { call, status ->
             call.response.header("Refresh", "5; url=/")
