@@ -4,18 +4,13 @@ import cc.worldmandia.kwebutils.presentation.model.*
 import com.charleskorn.kaml.*
 import kotlinx.serialization.json.*
 
-/**
- * Extension для превращения результата UseCase (Any) в UI модель.
- */
 fun Any.toEditableNode(parent: ParentContainer?): EditableNode {
     return when (this) {
         is YamlNode -> this.toEditableNodeYaml(parent)
         is JsonElement -> this.toEditableNodeJson(parent)
-        else -> EditableNull(parent) // Fallback
+        else -> EditableNull(parent)
     }
 }
-
-// --- Private Implementation Details ---
 
 private fun YamlNode.toEditableNodeYaml(parent: ParentContainer?): EditableNode {
     return when (this) {

@@ -78,7 +78,6 @@ fun NodeRow(
                 shape = RoundedCornerShape(8.dp)
             )
     } else {
-        // Обычный стиль строки
         val backgroundColor = when {
             isDuplicate -> MaterialTheme.colorScheme.errorContainer.copy(0.3f)
             isHovered -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
@@ -90,21 +89,16 @@ fun NodeRow(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .then(targetModifier) // Применяем стиль (обычный или плейсхолдер)
+            .then(targetModifier)
             .hoverable(interactionSource)
             .padding(vertical = 1.dp, horizontal = 4.dp)
     ) {
-        // Если мы перетаскиваем элемент (isDragging), мы делаем его содержимое невидимым (alpha = 0),
-        // чтобы осталась только "коробка" (плейсхолдер) нужной высоты.
-        // Если не перетаскиваем — показываем контент (alpha = 1).
         val contentAlpha = if (isDragging) 0f else 1f
 
         Row(
-            modifier = Modifier.alpha(contentAlpha), // Скрываем контент, но сохраняем размеры
+            modifier = Modifier.alpha(contentAlpha),
             verticalAlignment = Alignment.Top
         ) {
-            // Drag Handle (показываем всегда, чтобы отступы не прыгали, но активен только при наведении/драге)
-            // Разрешаем драг, если родитель List ИЛИ MapEntry
             val isSortable = item.node.parent is EditableList || item.node.parent is EditableMapEntry
 
             if (isSortable) {
@@ -149,7 +143,6 @@ fun NodeRow(
             }
         }
 
-        // Опционально: текст "Drop here" внутри плейсхолдера
         if (isDragging) {
             Text(
                 text = "Drop here",
@@ -166,7 +159,6 @@ fun Breadcrumbs(
     node: EditableNode?,
     onNodeClick: (EditableNode) -> Unit
 ) {
-    // Улучшенные хлебные крошки
     val path = remember(node) {
         val list = mutableListOf<Pair<String, EditableNode>>()
         var current = node
@@ -228,7 +220,7 @@ private fun ExpandControl(node: EditableNode) {
             Icons.Rounded.KeyboardArrowDown,
             null,
             modifier = Modifier
-                .size(20.dp) // Smaller icon
+                .size(20.dp)
                 .rotate(rotation)
                 .pointerHoverIcon(PointerIcon.Hand)
                 .clickable {
@@ -250,7 +242,6 @@ private fun KeyField(
 ) {
     when (keyInfo) {
         is MapKey -> {
-            // Minimalist TextField
             BasicTextField(
                 state = keyInfo.state,
                 modifier = Modifier
@@ -302,9 +293,8 @@ fun AddActionRow(item: UiAddAction, rootType: FileFormat) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IndentationGuides(item.level)
-        Spacer(Modifier.width(24.dp)) // Offset for expand icon
+        Spacer(Modifier.width(24.dp))
 
-        // Dotted line or subtle look
         Box(
             Modifier
                 .weight(1f)
@@ -330,7 +320,6 @@ fun AddActionRow(item: UiAddAction, rootType: FileFormat) {
 
         DropdownMenu(expanded, { expanded = false }) {
             NodeType.entries.forEach { type ->
-                // Filter logic...
                 val isAllowed = if (rootType == FileFormat.UNSUPPORTED) {
                     type == NodeType.String || type == NodeType.Number || type == NodeType.Boolean
                 } else true
@@ -597,7 +586,6 @@ fun NodeActionsMenu(
     val scope = rememberCoroutineScope()
 
     Box {
-        // Показываем иконку только при наведении или если меню открыто
         AnimatedVisibility(visible || expanded) {
             IconButton(
                 onClick = { expanded = true },
@@ -612,7 +600,6 @@ fun NodeActionsMenu(
         }
 
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            // ... (Logic logic remains exactly the same as in your original code) ...
             if (parent is EditableList) {
                 val index = parent.items.indexOf(item.node)
                 DropdownMenuItem(

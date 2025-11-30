@@ -1,5 +1,8 @@
 package cc.worldmandia
 
+import cc.worldmandia.database.user.SortType
+import cc.worldmandia.database.user.User
+import cc.worldmandia.database.user.UserRepository
 import io.ktor.http.*
 import io.ktor.resources.*
 import io.ktor.server.application.*
@@ -10,6 +13,7 @@ import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
+import org.koin.ktor.ext.inject
 
 fun Application.configureRouting() {
     install(Resources)
@@ -26,12 +30,24 @@ fun Application.configureRouting() {
             )
         }
     }
+    val userRepository by inject<UserRepository>()
+
     routing {
-        get("/hello") {
-            call.respondText("Hello World!")
-        }
-        get<Articles> { article ->
-            call.respond("List of articles sorted starting from ${article.sort}")
+        get<UsersApi> { userApi ->
+            userApi.sort?.let { sortType ->
+                call.respond(
+                    StringBuilder()
+                        .append("List of articles sorted starting from ${sortType.name}")
+                        .append(userRepository.getAllUsersBySortType(sortType).map {
+                            StringBuilder()
+                                .append(it[User.Table.id])
+                                .append(it[User.Table.name])
+                                .append(it[User.Table.age])
+                                .append(it[User.Table.bio])
+                                .append("--------------")
+                        })
+                )
+            } ?: call.respond(HttpStatusCode.BadRequest)
         }
         staticResources("/", "static") {
             preCompressed(CompressedFileType.BROTLI, CompressedFileType.GZIP)
@@ -40,5 +56,5 @@ fun Application.configureRouting() {
 }
 
 @Serializable
-@Resource("/articles")
-class Articles(val sort: String? = "new")
+@Resource("/v1/api/users")
+class UsersApi(val sort: SortType? = SortType.NEW)

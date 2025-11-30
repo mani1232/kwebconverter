@@ -13,6 +13,7 @@ plugins {
     alias(custom.plugins.ktor) apply false
     alias(custom.plugins.kotlinJvm) apply false
     alias(custom.plugins.composeHotReload) apply false
+    alias(custom.plugins.rpc) apply false
 }
 
 tasks.register("publishKWebUtils") {

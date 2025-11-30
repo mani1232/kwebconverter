@@ -25,6 +25,10 @@ activityCompose = "1.12.0"
 ktor = "3.3.3"
 composeHotReload = "1.1.0-alpha+179"
 logback = "1.5.21"
+exposed = "1.0.0-rc-4"
+postgresql = "1.1.1.RELEASE"
+ktoml = "0.7.1"
+rpc = "0.10.1"
 
 [libraries]
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" } # TODO koin-bom not working for backend
@@ -76,13 +80,33 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 
 # Backend
+exposed = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
+exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "exposed" }
+exposed-crypt = { module = "org.jetbrains.exposed:exposed-crypt", version.ref = "exposed" }
+exposed-r2dbc = { module = "org.jetbrains.exposed:exposed-r2dbc", version.ref = "exposed" }
+exposed-postgresql = { module = "org.postgresql:r2dbc-postgresql", version.ref = "postgresql" }
+ktoml = { module = "com.akuleshov7:ktoml-core", version.ref = "ktoml" }
+
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+ktor-server-cors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
 ktor-server-compression = { module = "io.ktor:ktor-server-compression", version.ref = "ktor" }
 ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
 ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+# Frontend
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+
+# rpc
+rpc-client = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-client", version.ref = "rpc" }
+rpc-server = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-server", version.ref = "rpc" }
+rpc-serialization = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-serialization-protobuf", version.ref = "rpc" }
+
+ktor-client-krpc = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-ktor-client", version.ref = "rpc" }
+ktor-server-krpc = { module = "org.jetbrains.kotlinx:kotlinx-rpc-krpc-ktor-server", version.ref = "rpc" }
 
 koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
 koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
@@ -98,9 +122,17 @@ compose-common = [
     "compose-ui",
 ]
 
+messenger = [
+    "ktor-client-core",
+    "ktor-client-cio",
+    "ktor-client-krpc",
+    "rpc-client",
+]
+
 backend = [
     "ktor-server-core",
     "ktor-server-cio",
+    "ktor-server-cors",
     "ktor-server-compression",
     "ktor-server-resources",
     "ktor-server-status-pages",
@@ -109,7 +141,20 @@ backend = [
     "koin-core",
     "koin-ktor",
     "koin-logger-slf4j",
-    "logback-classic"
+    "logback-classic",
+    "ktoml",
+    "ktor-server-krpc",
+    "rpc-serialization",
+    "rpc-server",
+]
+
+exposed = [
+    "exposed",
+    "exposed-datetime",
+    "exposed-json",
+    "exposed-crypt",
+    "exposed-r2dbc",
+    "exposed-postgresql",
 ]
 
 [plugins]
@@ -124,3 +169,4 @@ kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versio
 composePwa = { id = "dev.yuyuyuyuyu.composepwa", version.ref = "composePwa" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+rpc = { id = "org.jetbrains.kotlinx.rpc.plugin", version.ref = "rpc" }

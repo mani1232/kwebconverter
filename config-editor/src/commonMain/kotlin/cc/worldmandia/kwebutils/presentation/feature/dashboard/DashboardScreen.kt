@@ -233,8 +233,6 @@ fun TestChangeColor(surface: Color) {
     }
 }
 
-private fun Color.toRGBA(a: Float = 1f) = ColorRGBA(red, green, blue, a)
-
 @Composable
 fun ObjFileExample(surface: Color) {
     Korender(appResourceLoader = { Res.readBytes(it) }) {

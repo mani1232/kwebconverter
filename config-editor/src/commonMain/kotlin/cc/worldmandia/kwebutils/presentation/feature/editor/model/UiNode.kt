@@ -16,7 +16,6 @@ sealed interface NodeUiItem {
     val level: Int
 }
 
-// Обертка для отображения узла в списке
 data class UiNode(
     override val id: String,
     val node: EditableNode,
@@ -33,14 +32,12 @@ data class UiNode(
     }
 }
 
-// Кнопка "Добавить" в UI
 data class UiAddAction(
     override val id: String,
     override val level: Int,
     val onAdd: (NodeType) -> Unit
 ) : NodeUiItem
 
-// --- Логика превращения дерева в плоский список ---
 fun flattenTree(
     node: EditableNode,
     keyInfo: NodeKeyInfo? = null,
@@ -51,7 +48,6 @@ fun flattenTree(
     val parent = node.parent
     val parentMapId = (parent as? EditableMapEntry)?.parentMap?.id
 
-    // 1. Добавляем сам узел
     result.add(
         UiNode(
             id = if (parent is EditableMapEntry) parent.id else node.id,
@@ -63,7 +59,6 @@ fun flattenTree(
         )
     )
 
-    // 2. Рекурсивно добавляем детей, если узел развернут
     if (node is EditableList && node.isExpanded) {
         node.items.forEachIndexed { index, child ->
             result.addAll(flattenTree(child, ListIndex(index), level + 1, cmd))

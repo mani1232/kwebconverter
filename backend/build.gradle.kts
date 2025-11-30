@@ -10,6 +10,7 @@ plugins {
     alias(custom.plugins.ktor)
     alias(custom.plugins.kotlinJvm)
     alias(custom.plugins.kotlinSerialization)
+    alias(custom.plugins.rpc)
     application
 }
 
@@ -73,6 +74,7 @@ kotlin {
     sourceSets.main {
         dependencies {
             implementation(custom.bundles.backend)
+            implementation(custom.bundles.exposed)
         }
     }
 }

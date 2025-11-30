@@ -1,10 +1,6 @@
 plugins {
     alias(custom.plugins.kotlinMultiplatform)
-    //alias(custom.plugins.composeMultiplatform)
-    //alias(custom.plugins.composeCompiler)
     alias(custom.plugins.kotlinSerialization)
-    //alias(custom.plugins.ksp)
-    //alias(custom.plugins.composePwa)
 }
 
 kotlin {

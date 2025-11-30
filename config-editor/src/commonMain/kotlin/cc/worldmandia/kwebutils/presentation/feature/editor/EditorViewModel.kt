@@ -79,7 +79,6 @@ class EditorViewModel(
 
     fun onContentChanged() {
         val state = _uiState.value as? EditorUiState.Content ?: return
-        // Сериализация — дорогая операция, делаем асинхронно
         viewModelScope.launch {
             val content = NodeSerializer.serialize(state.root.rootNode, state.fileInfo.format)
             _contentUpdates.emit(content)
@@ -103,7 +102,6 @@ class EditorViewModel(
         }
     }
 
-    // Проксируем команды для CommandManager, чтобы VM знала об изменениях
     fun executeCommand(command: Command) {
         commandManager.execute(command)
         onContentChanged()
