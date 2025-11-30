@@ -25,33 +25,33 @@ fun Application.configureRouting() {
             call.response.header("Refresh", "5; url=/")
 
             call.respondText(
-                text = "404: Page Not Found. You will be redirected in 5 seconds.",
-                status = status
+                text = "404: Page Not Found. You will be redirected in 5 seconds.", status = status
             )
         }
     }
     val userRepository by inject<UserRepository>()
 
     routing {
-        get<UsersApi> { userApi ->
-            userApi.sort?.let { sortType ->
-                call.respond(
-                    StringBuilder()
-                        .append("List of articles sorted starting from ${sortType.name}")
-                        .append(userRepository.getAllUsersBySortType(sortType).map {
-                            StringBuilder()
-                                .append(it[User.Table.id])
-                                .append(it[User.Table.name])
-                                .append(it[User.Table.age])
-                                .append(it[User.Table.bio])
-                                .append("--------------")
-                        })
-                )
-            } ?: call.respond(HttpStatusCode.BadRequest)
+        preCompressed {
+            get<UsersApi> { userApi ->
+                userApi.sort?.let { sortType ->
+                    call.respond(
+                        StringBuilder().append("List of articles sorted starting from ${sortType.name}")
+                            .append(userRepository.getAllUsersBySortType(sortType).map {
+                                StringBuilder().append(it[User.Table.id]).append(it[User.Table.name])
+                                    .append(it[User.Table.age]).append(it[User.Table.bio]).append("--------------")
+                            })
+                    )
+                } ?: call.respond(HttpStatusCode.BadRequest)
+            }
+            singlePageApplication {
+                useResources = true
+                filesPath = "static"
+                defaultPage = "index.html"
+                ignoreFiles { it.endsWith(".txt") }
+            }
         }
-        staticResources("/", "static") {
-            preCompressed(CompressedFileType.BROTLI, CompressedFileType.GZIP)
-        }
+
     }
 }
 
