@@ -15,11 +15,13 @@ class Database(config: FileBasedConfiguration) {
         password = config.postgresConfig.postgresPassword
     )
 
-    operator fun invoke() = runBlocking {
-        suspendTransaction {
+    init {
+        runBlocking {
             listOf(User.Table).forEach { table ->
-                SchemaUtils.create(table)
-                MigrationUtils.statementsRequiredForDatabaseMigration(table, withLogs = true)
+                suspendTransaction {
+                    SchemaUtils.create(table)
+                    MigrationUtils.statementsRequiredForDatabaseMigration(table, withLogs = true)
+                }
             }
         }
     }

@@ -7,7 +7,7 @@ import org.jetbrains.exposed.v1.datetime.datetime
 object User {
     const val MAX_VARCHAR_LENGTH = 50
 
-    object Table : IntIdTable() {
+    object Table : IntIdTable("Users") {
         val name = varchar("name", MAX_VARCHAR_LENGTH)
         val bio = text("bio")
         val age = short("age")
