@@ -20,7 +20,7 @@ data class FileBasedConfiguration(
     data class PostgresConfig(
         val postgresPassword: String = "password",
         val postgresUser: String = "username",
-        val databaseName: String = "ktor_backend_db",
+        val databaseName: String = "postgres",
     )
 }
 
